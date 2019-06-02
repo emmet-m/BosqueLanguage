@@ -373,3 +373,39 @@ entity HashMap[K where Indexable, V] provides Map[K, V] {
 //<summary>A CompactMap entity.</summary>
 //entity CompactMap[K where Indexable, V] provides Map[K, V] {
 //}
+
+entity Stack[T] provides Collection[T] {
+    override method empty(): Bool # stack_empty
+    override method size(): Int # stack_size
+    override method count(p: Predicate[T]): Int # stack_count
+    override method {when T Indexable} has(v: T): Bool # stack_has
+    override method any(p: Predicate[T]): Bool # stack_any
+    override method all(p: Predicate[T]): Bool # stack_all
+    override method find(p: Predicate[T]): T # stack_find
+    override method tryFind(p: Predicate[T]): T? # stack_tryfind
+    override method defaultFind(p: Predicate[T], default: T): T # stack_defaultfind
+    override method filter(p: Predicate[T]): HashSet[T] # stack_filter
+    override method ofType[U where T](): HashSet[U] # stack_ofType
+    override method map[U](f: Transform[T, U]): List[U] # stack_map
+    override method skipMap[U](f: Transform[T, U?]): List[U] # stack_skipMap
+    override method flatMap[U](f: Transform[T, Collection[U]]): List[U] # stack_flatMap
+    override method transform(f: Transform[T, T]): List[T] # stack_transform
+    override method {when T Indexable} project[U](map: Map[T, U]): List[U] # stack_project
+    override method {when T Int} min(default?: Int): Int # stack_min
+    override method {when T Int} max(default?: Int): Int # stack_max
+    override method {when T Int} sum(): Int # stack_sum
+
+    //<summary>Returns but does not remove the element on the top of the stack.</summary>
+    method peek(): T # stack_peek
+    //<summary>Returns and removes the element on the top of the stack.</summary>
+    method pop():  T # stack_pop
+    //<summary>Adds an element to the top of the stack</summary>
+    method push(elem: T) # stack_push
+
+    //<summary>Get the element at the given index -- error if idx is out-of-bounds.</summary>
+    method at(idx: Int): T # stack_at
+    //<summary>Get the element at the given index -- none if idx is out-of-bounds.</summary>
+    method tryAt(idx: Int): T? # stack_tryat
+    //<summary>Get the element at the given index -- default if idx is out-of-bounds.</summary>
+    method defaultAt(idx: Int, default: T): T # stack_defaultat
+}
