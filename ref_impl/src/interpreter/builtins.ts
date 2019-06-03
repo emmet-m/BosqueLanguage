@@ -3,7 +3,7 @@
 // Licensed under the MIT license. See LICENSE.txt file in the project root for full license information.
 //-------------------------------------------------------------------------------------------------------
 
-import { Value, ValueOps, ListValue, FloatValue, RegexValue, LambdaValue, CollectionValue, MapValue, TupleValue } from "./value";
+import { Value, ValueOps, ListValue, StackValue, FloatValue, RegexValue, LambdaValue, CollectionValue, MapValue, TupleValue } from "./value";
 import { raiseRuntimeErrorIf, NotImplementedRuntimeError } from "./interpreter_environment";
 import { MIRAssembly, MIRInvokeDecl, MIRType, MIREntityType, MIREntityTypeDecl, MIRTupleTypeEntry, MIRTupleType } from "../compiler/mir_assembly";
 
@@ -447,6 +447,134 @@ const BuiltinCalls = new Map<string, BuiltinCallSig>()
 
         return createListOf(inv.resultType, [...avals]);
     })
+
+    .set("stack_empty", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        return (args.get("this") as StackValue).values.length === 0;
+    })
+    .set("stack_size", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        return (args.get("this") as StackValue).values.length;
+    })
+    .set("stack_count", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        return (args.get("this") as StackValue).values.reduce((acc, v) => (acc as number) + (ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])) ? 1 : 0), 0);
+    })
+    .set("stack_has", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const argv = args.get("v");
+        return (args.get("this") as StackValue).values.findIndex((v) => ValueOps.valueEqualTo(v, argv)) !== -1;
+    })
+    .set("stack_any", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        return (args.get("this") as StackValue).values.some((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+    })
+    .set("stack_all", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        return (args.get("this") as StackValue).values.every((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+    })
+    .set("stack_find", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        const idx = (args.get("this") as StackValue).values.findIndex((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+
+        raiseRuntimeErrorIf(idx === -1);
+        return (args.get("this") as StackValue).values[idx];
+    })
+    .set("stack_tryfind", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        const idx = (args.get("this") as StackValue).values.findIndex((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+        return idx !== -1 ? (args.get("this") as StackValue).values[idx] : undefined;
+    })
+    .set("stack_defaultfind", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        const idx = (args.get("this") as StackValue).values.findIndex((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+        return idx !== -1 ? (args.get("this") as StackValue).values[idx] : args.get("default");
+    })
+    .set("stack_filter", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("p") as LambdaValue;
+        const nvals = (args.get("this") as StackValue).values.filter((v) => ValueOps.convertBoolOrNoneToBool(ep(lambda, [v])));
+        return new StackValue(inv.resultType.options[0] as MIREntityType, nvals);
+    })
+    .set("stack_ofType", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const ttype = inv.terms.get("U") as MIRType;
+        const nvals = (args.get("this") as StackValue).values.filter((v) => masm.subtypeOf(ValueOps.getValueType(v), ttype));
+        return new StackValue(inv.resultType.options[0] as MIREntityType, nvals);
+    })
+    .set("stack_map", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("f") as LambdaValue;
+        const nvals = (args.get("this") as StackValue).values.map((v) => ep(lambda, [v]));
+        return createListOf(inv.resultType, nvals);
+    })
+    .set("stack_skipMap", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("f") as LambdaValue;
+        const nvals = (args.get("this") as StackValue).values.map((v) => ep(lambda, [v])).filter((v) => v !== undefined);
+        return createListOf(inv.resultType, nvals);
+    })
+    .set("stack_flatMap", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("f") as LambdaValue;
+        const nvals = (args.get("this") as StackValue).values.map((v) => ValueOps.getContainerContentsEnumeration(ep(lambda, [v]) as CollectionValue));
+        return createListOf(inv.resultType, ([] as Value[]).concat(...nvals));
+    })
+    .set("stack_transform", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const lambda = args.get("f") as LambdaValue;
+        const nvals = (args.get("this") as StackValue).values.map((v) => ep(lambda, [v]));
+        return new StackValue(inv.resultType.options[0] as MIREntityType, nvals);
+    })
+    .set("stack_project", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const map = args.get("map") as MapValue;
+        const nvals = (args.get("this") as StackValue).values.map((v) => {
+            const pv = map.lookup(ValueOps.getKeyForValue(v));
+            raiseRuntimeErrorIf(pv === null);
+            return pv as Value;
+        });
+        return createListOf(inv.resultType, nvals);
+    })
+    .set("stack_min", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const dmin = args.get("default");
+        const avals = (args.get("this") as StackValue).values;
+        raiseRuntimeErrorIf(dmin === undefined && avals.length === 0);
+
+        return avals.reduce((acc, v) => Math.min(acc as number, v as number), (dmin !== undefined ? dmin : avals[0]) as number);
+    })
+    .set("stack_max", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const dmax = args.get("default");
+        const avals = (args.get("this") as StackValue).values;
+        raiseRuntimeErrorIf(dmax === undefined && avals.length === 0);
+
+        return avals.reduce((acc, v) => Math.max(acc as number, v as number), (dmax !== undefined ? dmax : avals[0]) as number);
+    })
+    .set("stack_sum", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const dval = args.get("default");
+        const avals = (args.get("this") as StackValue).values;
+        raiseRuntimeErrorIf(dval === undefined && avals.length === 0);
+
+        return avals.reduce((acc, v) => (acc as number) + (v as number), (dval !== undefined ? dval : avals[0]) as number);
+    })
+
+    .set("stack_peek", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const vals = (args.get("this") as StackValue).values;
+        return vals.length === 0 ? undefined : vals[0];
+    })
+    .set("stack_pop", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const stack = args.get("this") as StackValue;
+        raiseRuntimeErrorIf(stack.values.length === 0);
+        const val = stack.values[0];
+
+        // [Stack[T], T]
+        const tupleType = [new MIRTupleTypeEntry(ValueOps.getValueType(stack), false),
+                           new MIRTupleTypeEntry(ValueOps.getValueType(val), false)];
+
+        return new TupleValue(MIRTupleType.create(false, tupleType), [new StackValue(stack.etype, stack.values.slice(1)), val]);
+
+    })
+    .set("stack_push", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
+        const vals = (args.get("this") as StackValue).values;
+        const nval = args.get("elem");
+
+        return new StackValue(inv.resultType.options[0] as MIREntityType, [nval, ...vals]);
+    })
+
+    //.set("stack_at", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
+    //.set("stack_tryat", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
+    //.set("stack_defaultat", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
+
     .set("math_abs", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
         const n = args.get("n") as FloatValue;
         return new FloatValue(Math.abs(n.value));

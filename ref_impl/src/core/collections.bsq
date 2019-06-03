@@ -396,11 +396,11 @@ entity Stack[T] provides Collection[T] {
     override method {when T Int} sum(): Int # stack_sum
 
     //<summary>Returns but does not remove the element on the top of the stack.</summary>
-    method peek(): T # stack_peek
-    //<summary>Returns and removes the element on the top of the stack.</summary>
-    method pop():  T # stack_pop
+    method peek(): T? # stack_peek
+    //<summary>Returns and removes the element on the top of the stack -- error if stack is empty.</summary>
+    method pop(): [Stack[T], T] # stack_pop
     //<summary>Adds an element to the top of the stack</summary>
-    method push(elem: T) # stack_push
+    method push(elem: T): Stack[T] # stack_push
 
     //<summary>Get the element at the given index -- error if idx is out-of-bounds.</summary>
     method at(idx: Int): T # stack_at

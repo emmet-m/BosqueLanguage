@@ -280,6 +280,19 @@ class HashMapValue extends MapValue {
     }
 }
 
+class StackValue extends CollectionValue {
+    readonly values: Value[];
+
+    constructor(etype: MIREntityType, values: Value[]) {
+        super(etype);
+        this.values = values;
+    }
+
+    getEnumContents(): Value[] {
+        return this.values;
+    }
+}
+
 class ValueOps {
     static isNone(v: Value): boolean {
         return v === undefined;
@@ -615,5 +628,5 @@ export {
     Value, KeyValue, FloatValue, TypedStringValue, RegexValue, GUIDValue, ValueOps,
     TupleValue, RecordValue, LambdaValue,
     EntityValue, EntityValueSimple, EnumValue, CustomKeyValue,
-    CollectionValue, ListValue, HashSetValue, MapValue, HashMapValue
+    CollectionValue, ListValue, HashSetValue, MapValue, HashMapValue, StackValue
 };
