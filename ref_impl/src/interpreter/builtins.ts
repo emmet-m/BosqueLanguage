@@ -571,10 +571,6 @@ const BuiltinCalls = new Map<string, BuiltinCallSig>()
         return new StackValue(inv.resultType.options[0] as MIREntityType, [nval, ...vals]);
     })
 
-    //.set("stack_at", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
-    //.set("stack_tryat", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
-    //.set("stack_defaultat", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {})
-
     .set("math_abs", (ep: InterpreterEntryPoint, inv: MIRInvokeDecl, masm: MIRAssembly, args: Map<string, Value>): Value => {
         const n = args.get("n") as FloatValue;
         return new FloatValue(Math.abs(n.value));

@@ -284,6 +284,7 @@ class StackValue extends CollectionValue {
     readonly values: Value[];
 
     constructor(etype: MIREntityType, values: Value[]) {
+
         super(etype);
         this.values = values;
     }

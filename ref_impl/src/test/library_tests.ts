@@ -141,13 +141,19 @@ entrypoint function fillList(): List[Int] {
     var list: List[Int] = List[Int]@{1,2,3,4,5};
     return list->fill(1);
 }
+
+entrypoint function stackEmpty(): Bool {
+    var s: Stack[Int] = Stack[Int]@{};
+    return s->empty();
+}
 `;
 
 const collectionlib_tests: TestInfo[] = [
     { name: "findLastMatchingElementInList", input: ["findLastMatchingElementInList"], expected: "@{ b=4, f=2 }" },
     { name: "tryFindLastMatchingElementInList1", input: ["tryFindLastMatchingElementInList1"], expected: "none" },
     { name: "tryFindLastMatchingElementInList2", input: ["tryFindLastMatchingElementInList2"], expected: "@{ b=4, f=2 }" },
-    { name: "fillList", input: ["fillList"], expected: "NSCore::List[T=NSCore::Int]@{ 1, 1, 1, 1, 1 }" }
+    { name: "fillList", input: ["fillList"], expected: "NSCore::List[T=NSCore::Int]@{ 1, 1, 1, 1, 1 }" },
+    { name: "stackEmpty", input: ["stackEmpty"], expected: "true" },
 ];
 
 function collectionlib_setup(core: { relativePath: string, contents: string }[]): { masm: MIRAssembly | undefined, errors: string[] } {

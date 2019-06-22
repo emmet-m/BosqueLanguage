@@ -51,6 +51,7 @@ function runApp(app: string) {
         res = ValueOps.diagnosticPrintValue(ip.evaluateRootNamespaceCall("NSMain", "main", []));
     }
     catch (ex) {
+        console.log(ex);
         process.stdout.write(chalk.red(`fail with exception -- ${ex}\n`));
         process.exit(1);
     }

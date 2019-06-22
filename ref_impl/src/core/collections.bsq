@@ -401,11 +401,4 @@ entity Stack[T] provides Collection[T] {
     method pop(): [Stack[T], T] # stack_pop
     //<summary>Adds an element to the top of the stack</summary>
     method push(elem: T): Stack[T] # stack_push
-
-    //<summary>Get the element at the given index -- error if idx is out-of-bounds.</summary>
-    method at(idx: Int): T # stack_at
-    //<summary>Get the element at the given index -- none if idx is out-of-bounds.</summary>
-    method tryAt(idx: Int): T? # stack_tryat
-    //<summary>Get the element at the given index -- default if idx is out-of-bounds.</summary>
-    method defaultAt(idx: Int, default: T): T # stack_defaultat
 }
